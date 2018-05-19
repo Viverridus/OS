@@ -13,9 +13,11 @@ void printPrompt();
 void readInput();
 void parseInput(char*, char**);
 void executeCommand(char**);
+int waiting();
 
 int main(void)
 {
+	printf("PID: %i \n",getpid());
 	char line[1024];
 	char entryDir[512] = { 0 };
 
@@ -42,7 +44,7 @@ int main(void)
         	while (temp != NULL)
         	{
         		*next++ = temp;
-			temp = strtok(NULL, " \n");
+				temp = strtok(NULL, " \n");
         	}
 
         	*next = NULL;
@@ -63,18 +65,40 @@ int main(void)
 			}
 		}
 		else if (strcmp(args[0], "wait") == 0)
-		{
-			//code for wait
-			printf("wait...\n");
+		{	
+			waiting(args[1]);
 		}
 		else
 		{
         		executeCommand(args);
 		}
-    	}
+    }
 
     return EXIT_SUCCESS;	
 }
+/*********************************************************************************************/
+int waiting(pid_t ID)
+{
+	int status;
+	pid_t pid;
+
+	if  ((pid = fork()) == 0)
+	{
+		if (waitpid(ID, &status,WNOHANG)<0)
+		{	
+			printf("%d\n",waitpid(ID, &status,WNOHANG) );
+			printf("waitstatus of proocess:  %d \n", status);
+			printf("The function was interrupted by a signal. The value of the location pointed to by stat_loc is undefined.");
+		}
+	}
+	if (pid < 0)
+	{
+		printf("ERROR: Fork Error 208");
+	}
+	else wait(&status);	
+	return status;
+}
+
 
 void printPrompt()
 {
@@ -104,11 +128,12 @@ void executeCommand(char **inArguments)
 	if (child_pid < 0)
 		fprintf(stderr, "Fork Failed");
 	else if (child_pid == 0)
-	{
+	{	
+		printf("PID: %i \n",getpid());
 		signal(SIGINT, SIG_IGN);
 		if (execvp(*inArguments, inArguments) < 0)
 		{ /* execute cmd */
-			perror("Too bad");
+			perror("Error while executing command:");
 			exit(EXIT_FAILURE);
 		}
 	} 
