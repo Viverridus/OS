@@ -13,6 +13,7 @@ void printPrompt();
 void readInput();
 void parseInput(char*, char**);
 void executeCommand(char**);
+int waiting(pid_t ID);
 
 int main(void)
 {
@@ -63,9 +64,11 @@ int main(void)
 			}
 		}
 		else if (strcmp(args[0], "wait") == 0)
-		{
-			//code for wait
-			printf("wait...\n");
+		{	
+			for (int i=1, i!=NULL, i++)
+			{
+				waiting(atoi(args[i]));
+			}
 		}
 		else
 		{
@@ -75,6 +78,31 @@ int main(void)
 
     return EXIT_SUCCESS;	
 }
+/***********************************************************************************************/
+
+int waiting(int ID) 
+{ 
+  int status; 
+  int j = waitpid(ID, &status,WNOHANG);
+ 
+    if (j<0) 									//waitpid returned error
+    {   
+    	perror("ERROR");
+    } 
+    if (j==0)									//status not available
+    {
+    	perror("status not available \n");
+    }
+	else 										//status available
+	{
+		printf("waitpid(): %d\n", j);
+		printf("status: %d\n", status);
+	}   
+ 
+
+ // printf("%d \n", status);
+  return status && WIFEXITED(status) && WIFSIGNALED(stat_val)&& WTERMSIG(stat_val) ; 	
+} 
 
 void printPrompt()
 {
@@ -105,7 +133,7 @@ void executeCommand(char **inArguments)
 	int background = 0;
 
 	while(inArguments[i] != NULL)
-	{
+	{	
 		if (strcmp(inArguments[i++], "&") == 0)
 			   background = 1;
 	}
@@ -115,6 +143,7 @@ void executeCommand(char **inArguments)
 		fprintf(stderr, "Fork Failed");
 	else if (child_pid == 0)
 	{
+		 printf("PID: %i \n",getpid()); 
 		signal(SIGINT, SIG_IGN);
 		if (execvp(*inArguments, inArguments) < 0)
 		{ /* execute cmd */
