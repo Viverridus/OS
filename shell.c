@@ -12,12 +12,13 @@ char input[512] = { 0 };
 void printPrompt();
 void readInput();
 void parseInput(char*, char**);
-void executeCommand(char**);
+void executeCommand(char**, int);
 
 int main(void)
 {
 	char line[1024];
 	char entryDir[512] = { 0 };
+	int background = 0;
 
 	if (getcwd(entryDir, sizeof(entryDir)) == NULL)
 	{
@@ -41,7 +42,15 @@ int main(void)
         	char *temp = strtok(line, " \n");
         	while (temp != NULL)
         	{
-        		*next++ = temp;
+			if (strcmp(temp, "&") == 0)
+			{
+				background = 1;
+				*next++ = NULL;
+			}
+        		else
+			{			
+				*next++ = temp;
+			}
 			temp = strtok(NULL, " \n");
         	}
 
@@ -69,7 +78,7 @@ int main(void)
 		}
 		else
 		{
-        		executeCommand(args);
+        		executeCommand(args, background);
 		}
     	}
 
@@ -98,17 +107,8 @@ void printPrompt()
 	printf("%s", host);
 }
 
-void executeCommand(char **inArguments)
+void executeCommand(char **inArguments, int inBackground)
 {
-
-	int i = 0;
-	int background = 0;
-
-	while(inArguments[i] != NULL)
-	{
-		if (strcmp(inArguments[i++], "&") == 0)
-			   background = 1;
-	}
 
 	pid_t child_pid = fork(); /* fork a new process */
 	if (child_pid < 0)
@@ -124,7 +124,7 @@ void executeCommand(char **inArguments)
 	}
 	else
 	{
-		if (background == 1)
+		if (inBackground == 1)
 		{
 			printf("PID[%d]\n", child_pid);	
 		}
