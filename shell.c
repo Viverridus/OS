@@ -12,14 +12,16 @@ char input[512] = { 0 };
 void printPrompt();
 void readInput();
 void parseInput(char*, char**);
-void executeCommand(char**);
-int waiting();
+void executeCommand(char**, int);
+//void waiting(char**);
+void signalHandlerRegular(int);
 
 int main(void)
 {
-	printf("PID: %i \n",getpid());
+
 	char line[1024];
 	char entryDir[512] = { 0 };
+	int background = 0;
 
 	if (getcwd(entryDir, sizeof(entryDir)) == NULL)
 	{
@@ -27,9 +29,10 @@ int main(void)
 		//EXIT?		
 	}
 
-	//while (fgets(line, sizeof(line), stdin) != NULL)
 	while(1)
 	{
+
+		signal(SIGINT, signalHandlerRegular);
 		printPrompt();
 
 		if (fgets(line, sizeof(line), stdin) == NULL)
@@ -38,67 +41,57 @@ int main(void)
 			//EXIT?
 		}
 
-		char *args[64];
-        	char **next = args;
-        	char *temp = strtok(line, " \n");
-        	while (temp != NULL)
-        	{
-        		*next++ = temp;
-				temp = strtok(NULL, " \n");
-        	}
-
-        	*next = NULL;
-
-		if (strcmp(args[0], "exit") == 0)
-			exit(EXIT_SUCCESS);
-		else if (strcmp(args[0], "cd") == 0)
+		char *pnt = line;
+		if (*pnt != '\n')
 		{
-			if (args[1] == NULL)
+			char *args[64];
+        		char **next = args;
+        		char *temp = strtok(line, " \n");
+        		while (temp != NULL)
+        		{
+				if (strcmp(temp, "&") == 0)
+				{
+					background = 1;
+					*next++ = NULL;
+				}
+        			else
+				{			
+					*next++ = temp;
+				}
+				temp = strtok(NULL, " \n");
+        		}
+	
+        		*next = NULL;
+	
+			if (strcmp(args[0], "exit") == 0)
+				exit(EXIT_SUCCESS);
+			else if (strcmp(args[0], "cd") == 0)
 			{
-				if (chdir(entryDir) < 0)
-					perror("Error while changing directory:");
-			}		
+				if (args[1] == NULL)
+				{
+					if (chdir(entryDir) < 0)
+						perror("Error while changing directory:");
+				}		
+				else
+				{
+					if (chdir(args[1]) < 0)
+						perror("Error while changing directory:");
+				}
+			}
+			else if (strcmp(args[0], "wait") == 0)
+			{
+				//IMPLEMENT WAIT
+			}
 			else
 			{
-				if (chdir(args[1]) < 0)
-					perror("Error while changing directory:");
+        			executeCommand(args, background);
 			}
-		}
-		else if (strcmp(args[0], "wait") == 0)
-		{	
-			waiting(args[1]);
-		}
-		else
-		{
-        		executeCommand(args);
-		}
-    }
+    		}	
 
+	}
+		
     return EXIT_SUCCESS;	
 }
-/*********************************************************************************************/
-int waiting(pid_t ID)
-{
-	int status;
-	pid_t pid;
-
-	if  ((pid = fork()) == 0)
-	{
-		if (waitpid(ID, &status,WNOHANG)<0)
-		{	
-			printf("%d\n",waitpid(ID, &status,WNOHANG) );
-			printf("waitstatus of proocess:  %d \n", status);
-			printf("The function was interrupted by a signal. The value of the location pointed to by stat_loc is undefined.");
-		}
-	}
-	if (pid < 0)
-	{
-		printf("ERROR: Fork Error 208");
-	}
-	else wait(&status);	
-	return status;
-}
-
 
 void printPrompt()
 {
@@ -122,20 +115,43 @@ void printPrompt()
 	printf("%s", host);
 }
 
-void executeCommand(char **inArguments)
+void executeCommand(char **inArguments, int inBackground)
 {
+
 	pid_t child_pid = fork(); /* fork a new process */
 	if (child_pid < 0)
 		fprintf(stderr, "Fork Failed");
 	else if (child_pid == 0)
-	{	
-		printf("PID: %i \n",getpid());
+	{
 		signal(SIGINT, SIG_IGN);
 		if (execvp(*inArguments, inArguments) < 0)
 		{ /* execute cmd */
-			perror("Error while executing command:");
+			perror("Too bad");
 			exit(EXIT_FAILURE);
 		}
-	} 
+	}
+	else
+	{
+		if (inBackground == 1)
+		{
+			printf("PID[%d]\n", child_pid);	
+		}
+		else
+		{
+			int status;
+			while (wait(&status) != child_pid)
+			{
+				//do nothing
+			}
+		}
+	}
 
+}
+
+/* WAIT HERE */
+
+//ignore CTRL+C when not waiting
+void signalHandlerRegular(int sig)
+{
+	signal(sig, SIG_IGN);
 }
