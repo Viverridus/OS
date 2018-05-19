@@ -12,12 +12,10 @@ char input[512] = { 0 };
 void printPrompt();
 void readInput();
 void parseInput(char*, char**);
-<<<<<<< HEAD
 void executeCommand(char**);
 int waiting(pid_t ID);
-=======
+
 void executeCommand(char**, int);
->>>>>>> develop
 
 int main(void)
 {
@@ -80,7 +78,7 @@ int main(void)
 		{	
 			for (int i=1, i!=NULL, i++)
 			{
-				waiting(atoi(args[i]));
+				if(waiting(atoi(args[i]));
 			}
 		}
 		else
@@ -142,7 +140,6 @@ void printPrompt()
 void executeCommand(char **inArguments, int inBackground)
 {
 
-<<<<<<< HEAD
 	int i = 0;
 	int background = 0;
 
@@ -152,8 +149,7 @@ void executeCommand(char **inArguments, int inBackground)
 			   background = 1;
 	}
 
-=======
->>>>>>> develop
+
 	pid_t child_pid = fork(); /* fork a new process */
 	if (child_pid < 0)
 		fprintf(stderr, "Fork Failed");
